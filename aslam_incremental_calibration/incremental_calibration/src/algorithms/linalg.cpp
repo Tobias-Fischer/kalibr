@@ -267,9 +267,19 @@ namespace aslam {
       if (cholmod == NULL)
         throw NullPointerException("cholmod", __FILE__, __LINE__,
           __PRETTY_FUNCTION__);
+      const SuiteSparse_long* col_ptr =
+        reinterpret_cast<const SuiteSparse_long*>(A->p);
+      const double* values = reinterpret_cast<const double*>(A->x);
       double maxColNorm = 0.0;
-      for (std::ptrdiff_t j = 0; j < static_cast<std::ptrdiff_t>(A->ncol); ++j)
-        maxColNorm = std::max(maxColNorm, colNorm(A, j));
+      for (SuiteSparse_long j = 0;
+          j < static_cast<SuiteSparse_long>(A->ncol); ++j) {
+        const SuiteSparse_long p = col_ptr[j];
+        const SuiteSparse_long numElements = col_ptr[j + 1] - p;
+        double norm = 0.0;
+        for (SuiteSparse_long i = 0; i < numElements; ++i)
+          norm += values[p + i] * values[p + i];
+        maxColNorm = std::max(maxColNorm, std::sqrt(norm));
+      }
       return 20.0 * static_cast<double>(A->nrow + A->ncol) * eps * maxColNorm;
     }
 
