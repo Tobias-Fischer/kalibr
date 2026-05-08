@@ -26,7 +26,6 @@
 
 #include <cholmod.h>
 #include <SuiteSparseQR.hpp>
-#include <spqr.hpp>
 
 #include "aslam/calibration/exceptions/OutOfBoundException.h"
 #include "aslam/calibration/exceptions/InvalidOperationException.h"
@@ -60,7 +59,7 @@ namespace aslam {
         throw NullPointerException("cholmod", __FILE__, __LINE__,
           __PRETTY_FUNCTION__);
       const std::ptrdiff_t numIndices = colEndIdx - colStartIdx + 1;
-      std::ptrdiff_t* colIndices = new std::ptrdiff_t[numIndices];
+      SuiteSparse_long* colIndices = new SuiteSparse_long[numIndices];
       for (std::ptrdiff_t j = colStartIdx; j <= colEndIdx; ++j)
         colIndices[j - colStartIdx] = j;
       cholmod_sparse* A_sub = cholmod_l_submatrix(A, NULL, -1, colIndices,
@@ -92,7 +91,7 @@ namespace aslam {
         throw NullPointerException("cholmod", __FILE__, __LINE__,
           __PRETTY_FUNCTION__);
       const std::ptrdiff_t numIndices = rowEndIdx - rowStartIdx + 1;
-      std::ptrdiff_t* rowIndices = new std::ptrdiff_t[numIndices];
+      SuiteSparse_long* rowIndices = new SuiteSparse_long[numIndices];
       for (std::ptrdiff_t i = rowStartIdx; i <= rowEndIdx; ++i)
        rowIndices[i - rowStartIdx] = i;
       cholmod_sparse* A_sub = cholmod_l_submatrix(A, rowIndices, numIndices,
@@ -268,8 +267,10 @@ namespace aslam {
       if (cholmod == NULL)
         throw NullPointerException("cholmod", __FILE__, __LINE__,
           __PRETTY_FUNCTION__);
-      return 20.0 * static_cast<double>(A->nrow + A->ncol) * eps *
-        spqr_maxcolnorm<double>(A, cholmod);
+      double maxColNorm = 0.0;
+      for (std::ptrdiff_t j = 0; j < static_cast<std::ptrdiff_t>(A->ncol); ++j)
+        maxColNorm = std::max(maxColNorm, colNorm(A, j));
+      return 20.0 * static_cast<double>(A->nrow + A->ncol) * eps * maxColNorm;
     }
 
     double svGap(const Eigen::VectorXd& sv, std::ptrdiff_t rank) {

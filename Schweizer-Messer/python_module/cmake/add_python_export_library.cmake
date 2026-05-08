@@ -63,6 +63,7 @@ ${SETUP_PY_TEXT}
   catkin_python_setup()
 
   # Find Python
+  FIND_PACKAGE(PythonInterp REQUIRED)
   FIND_PACKAGE(PythonLibs REQUIRED)
   INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
 
@@ -86,7 +87,7 @@ ${SETUP_PY_TEXT}
       list(APPEND BOOST_COMPONENTS python27)
     endif()
   else()	  
-     list(APPEND BOOST_COMPONENTS python39)
+     list(APPEND BOOST_COMPONENTS python${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR})
   endif()
   find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS}) 
 
@@ -110,9 +111,20 @@ ${SETUP_PY_TEXT}
     ENDIF()
   ENDIF(APPLE)
   
+  EXECUTE_PROCESS(
+    COMMAND "${PYTHON_EXECUTABLE}" -c "import numpy; print(numpy.get_include())"
+    OUTPUT_VARIABLE NUMPY_INCLUDE_ROOT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+  IF(EXISTS "${NUMPY_INCLUDE_ROOT}/numpy/arrayobject.h")
+    INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_ROOT})
+  ENDIF()
+
   string(REPLACE "include" "lib" PYTHON_LIB_PIXI_DIR ${PYTHON_INCLUDE_DIRS})
   FIND_PATH(NUMPY_INCLUDE_DIR arrayobject.h
           ${PYTHON_LIB_PIXI_DIR}/site-packages/numpy/core/include/numpy
+          ${PYTHON_LIB_PIXI_DIR}/site-packages/numpy/_core/include/numpy
   )
   IF(NOT ${NUMPY_INCLUDE_DIR} MATCHES NOTFOUND)
     INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_DIR})
@@ -155,4 +167,3 @@ ${SETUP_PY_TEXT}
   set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${AMCF}") 
   
 ENDFUNCTION()
-
