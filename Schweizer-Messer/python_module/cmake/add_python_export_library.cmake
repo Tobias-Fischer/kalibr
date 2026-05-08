@@ -65,6 +65,7 @@ ${SETUP_PY_TEXT}
   # Find Python
   FIND_PACKAGE(PythonInterp REQUIRED)
   FIND_PACKAGE(PythonLibs REQUIRED)
+  FIND_PACKAGE(Python COMPONENTS Development.Module QUIET)
   INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
 
   if(APPLE)
@@ -136,12 +137,27 @@ ${SETUP_PY_TEXT}
   add_library( ${TARGET_NAME}
       ${ARGN}
     )
+  IF(APPLE)
+    set_target_properties( ${TARGET_NAME} PROPERTIES SUFFIX ".so" )
+  ENDIF()
 
   # Link your python project to the main library and to Python
-  target_link_libraries( ${TARGET_NAME}
-    ${PYTHON_LIBRARY}
-    ${catkin_LIBRARIES}
-    )
+  IF(APPLE AND TARGET Python::Module)
+    target_link_libraries( ${TARGET_NAME}
+      Python::Module
+      ${catkin_LIBRARIES}
+      )
+  ELSEIF(APPLE)
+    target_link_libraries( ${TARGET_NAME}
+      ${catkin_LIBRARIES}
+      )
+    set_target_properties( ${TARGET_NAME} PROPERTIES LINK_FLAGS "-undefined dynamic_lookup" )
+  ELSE()
+    target_link_libraries( ${TARGET_NAME}
+      ${PYTHON_LIBRARY}
+      ${catkin_LIBRARIES}
+      )
+  ENDIF()
 
   # Link against boost::python
   target_link_libraries(${TARGET_NAME} ${Boost_LIBRARIES})
